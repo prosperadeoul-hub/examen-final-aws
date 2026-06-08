@@ -1,0 +1,54 @@
+import os
+import requests
+import json
+from dotenv import load_dotenv
+
+load_dotenv()
+
+URL_INGESTION = os.getenv("CLOUDFRONT_INGESTION_URL")
+
+def envoyer_donnies_valides():
+    print("--- Envoi d'un jeu de données VALIDES ---")
+    
+    payload = {
+        "measures": [
+            {"sensor_id": "capteur-01", "temperature": 24.5, "status": "OK"},
+            {"sensor_id": "capteur-02", "temperature": 26.2, "status": "OK"},
+            {"sensor_id": "capteur-03", "temperature": 85.0, "status": "ERROR"},
+            {"sensor_id": "capteur-04", "temperature": 23.1, "status": "OK"}
+        ]
+    }
+    
+    try:
+        print(f"Cible : {URL_INGESTION}")
+        response = requests.post(URL_INGESTION, json=payload)
+        print(f"Statut HTTP reçu : {response.status_code}")
+        print(f"Réponse d'AWS : {response.text}\n")
+    except Exception as e:
+        print(f"Erreur lors de la requête : {e}\n")
+
+def envoyer_donnies_corrompues():
+    print("--- Envoi d'un jeu de données CORROMPUES (Test d'échec) ---")
+
+    payload_invalide = {
+        "measures": [
+            {"sensor_id": "capteur-05", "status": "OK"},
+            {"sensor_id": "capteur-06", "temperature": "PasUneTemperature", "status": "ERROR"}
+        ]
+    }
+    
+    try:
+        print(f"Cible : {URL_INGESTION}")
+        response = requests.post(URL_INGESTION, json=payload_invalide)
+        print(f"Statut HTTP reçu : {response.status_code}")
+        print(f"Réponse d'AWS : {response.text}\n")
+    except Exception as e:
+        print(f"Erreur interceptée : {e}\n")
+
+if __name__ == "__main__":
+    print("Script client prêt pour les tests post-déploiement.\n")
+    if not URL_INGESTION:
+        print("Erreur : La variable CLOUDFRONT_INGESTION_URL n'est pas définie dans le fichier .env")
+    else:
+        envoyer_donnies_valides()
+        envoyer_donnies_corrompues()
