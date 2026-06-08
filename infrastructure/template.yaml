@@ -1,0 +1,122 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Examen Final - Pipeline d'ingestion de données IoT en Temps réel et Documentation Technique Serverless
+
+Parameters:
+  Environment:
+    Type: String
+    Default: "kadeoul"
+    Description: "Le nom d'environnement pour personnaliser les ressources"
+
+Resources:
+
+  DataLakeBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "iot-data-lake-${Environment}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  TechDocBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "iot-tech-doc-${Environment}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+      WebsiteConfiguration:
+        IndexDocument: index.html
+
+  AnalyticsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "iot-analytics-store-${Environment}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: "requestId"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "requestId"
+          KeyType: "HASH"
+
+  PoolFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "iot-ingestion-function-${Environment}"
+      Runtime: python3.11
+      Handler: index.handler
+      CodeUri: ../src/
+      Timeout: 30
+      MemorySize: 128
+      Environment:
+        Variables:
+          S3_BUCKET: !Ref DataLakeBucket
+          DYNAMODB_TABLE: !Ref AnalyticsTable
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref DataLakeBucket
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AnalyticsTable
+
+  HttpApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Sub "iot-pool-api-${Environment}"
+      ProtocolType: HTTP
+
+  LambdaIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref HttpApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt PoolFunction.Arn
+      PayloadFormatVersion: "2.0"
+
+  PoolRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: "POST /ingest"
+      Target: !Sub "integrations/${LambdaIntegration}"
+
+  ApiStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref HttpApi
+      StageName: "$default"
+      AutoDeploy: true
+
+  ApiGatewayLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref PoolFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*"
+
+  TechDocBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref TechDocBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: "PublicReadGetObject"
+            Effect: Allow
+            Principal: "*"
+            Action: s3:GetObject
+            Resource: !Sub "arn:aws:s3:::iot-tech-doc-${Environment}/*"
+
+Outputs:
+  ApiGatewayIngestionURL:
+    Description: "URL directe API Gateway pour l'ingestion"
+    Value: !Sub "${HttpApi.ApiEndpoint}/ingest"
+
+  S3DocURL:
+    Description: "URL de la documentation technique sur S3"
+    Value: !GetAtt TechDocBucket.WebsiteURL
