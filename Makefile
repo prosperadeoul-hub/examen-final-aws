@@ -18,7 +18,7 @@ deploy: build
 # Crée l'environnement virtuel Python et installe les dépendances requises
 venv:
 	python -m venv venv
-	.\venv\Scripts\pip install requests python-dotenv
+	.\venv\Scripts\pip install requests python-dotenv boto3
 
 # Lance le script de test client avec l'environnement virtuel
 test:
