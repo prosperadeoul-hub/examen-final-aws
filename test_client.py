@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Récupération de l'URL CloudFront exigée par la consigne de l'examen
-URL_INGESTION = os.getenv("CloudFrontIngestionURL")
+URL_INGESTION = os.getenv("CLOUDFRONT_INGESTION_URL")
 
 def envoyer_donnies_valides():
     print("Envoi d'un jeu de données VALIDES (7 mesures)")
@@ -29,7 +29,7 @@ def envoyer_donnies_valides():
         print(f"Cible : {URL_INGESTION}")
         response = requests.post(URL_INGESTION, json=payload)
         
-        # Interception et affichage de la réponse d'AWS (Doit être 201)
+        # Interception et affichage de la réponse d'AWS
         print(f"Statut HTTP reçu : {response.status_code}") 
         print(f"Réponse d'AWS : {response.text}\n")
     except Exception as e:
