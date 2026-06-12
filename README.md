@@ -27,6 +27,8 @@ L'architecture multi-niveaux mise en œuvre comprend les composants Cloud suivan
 ├── template.yaml            # Modèle AWS SAM / CloudFormation (Infrastructure as Code) [cite: 23, 117]
 └── README.md                # Fichier d'accueil et documentation principale du dépôt
 
+## Url du dépot github du projet: https://github.com/prosperadeoul-hub/examen-final-aws
+
 ## Etapes pour le déploiement du projet
 ### 1. se positonner dans le dossier du projet
 cd examen-final-aws
