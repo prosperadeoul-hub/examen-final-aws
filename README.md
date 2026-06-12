@@ -27,4 +27,21 @@ L'architecture multi-niveaux mise en œuvre comprend les composants Cloud suivan
 ├── template.yaml            # Modèle AWS SAM / CloudFormation (Infrastructure as Code) [cite: 23, 117]
 └── README.md                # Fichier d'accueil et documentation principale du dépôt
 
-## Variables d'environnement: les variables
+## Etapes pour le déploiement du projet
+### 1. se positonner dans le dossier du projet
+cd examen-final-aws
+
+### 2. Compilation de l'app
+sam build
+
+### 3. Déploiement automatisé
+sam deploy --guided
+
+### 4. Configuration de l'environnement local de test
+Dupliquez le fichier d'exemple : cp .env.example .env
+
+Ouvrez le fichier .env nouvellement créé et remplacez les valeurs génériques par les adresses réelles fournies dans les Outputs de l'étape précédente (CLOUDFRONT_INGESTION_URL et S3_DOC_URL).
+
+### 5. Exécution des simulations d'injection IoT
+Lancez le script de validation client pour vérifier le routage et le traitement analytique en direct :
+python test_client.py
